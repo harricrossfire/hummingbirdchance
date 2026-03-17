@@ -6,7 +6,7 @@ export default async function handler(req, res) {
     const weatherQuery = q ? encodeURIComponent(q) : `${lat},${lon}`;
     
     // 2. Fetch Weather
-    const weatherUrl = `https://api.weatherapi.com/v1/current.json?key=${process.env.WEATHER_API_KEY}&q=${weatherQuery}`;
+    const weatherUrl = `https://api.weatherapi.com/v1/current.json?key=${process.env.HUMMER_WEATHER_KEY}&q=${weatherQuery}`;
 
     try {
         const weatherRes = await fetch(weatherUrl);
@@ -23,7 +23,7 @@ export default async function handler(req, res) {
         // 4. Fetch Birds
         const eBirdUrl = `https://api.ebird.org/v2/data/obs/geo/recent?lat=${actualLat}&lng=${actualLon}&dist=25`;
         const eBirdRes = await fetch(eBirdUrl, {
-            headers: { 'X-eBirdApiToken': process.env.EBIRD_API_KEY }
+            headers: { 'X-eBirdApiToken': process.env.HUMMER_BIRD_KEY }
         });
         const birdData = await eBirdRes.json();
 
