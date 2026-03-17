@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>HummerWatch - Mom's Bird Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel = "stylesheet" href ="hummingbird_chance.css">
+</head>
+<body class="p-4 md:p-8 pb-20">
+
+    <div class="max-w-md md:max-w-4xl mx-auto">
+        <!-- Header -->
+        <header class="flex flex-col items-center text-center md:text-left md:flex-row md:justify-between mb-8 gap-6">
+            <div class="flex flex-col md:flex-row items-center gap-4">
+                <!-- Removed bg-green-600 and p-4, swapped SVG for IMG -->
+                <div class="hummingbird-float">
+                    <img src="https://res.cloudinary.com/ddrwjhxu6/image/upload/v1773372300/Untitled_design_emhmtp.png" width = "30px" height="30px" alt="Hummer Logo" class="custom-logo" onerror="this.src='https://cdn-icons-png.flaticon.com/512/2613/2613860.png'">
+                </div>
+                <div>
+                    <h1 class="text-3xl font-bold text-green-900">HummerWatch</h1>
+                    <p class="text-green-700 font-medium">Mom's Personal Predictor</p>
+                </div>
+            </div>
+            <button onclick="updateAllData()" class="w-full md:w-auto bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded-2xl font-bold transition-all shadow-lg text-lg">
+                Refresh My Garden
+            </button>
+        </header>
+
+        <div id="loading" class="hidden text-center py-8">
+            <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-green-600 border-t-transparent"></div>
+            <p class="mt-2 text-green-800 font-medium">Scanning the skies...</p>
+        </div>
+
+        <div id="mainContent" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Probability Score -->
+            <div class="md:col-span-1 glass-card p-8 flex flex-col items-center justify-center text-center">
+                <h3 class="text-lg font-bold text-green-800 mb-4 uppercase tracking-wider">Sighting Chance</h3>
+                <div class="relative flex items-center justify-center">
+                    <svg class="w-48 h-48">
+                        <circle class="text-gray-200" stroke-width="12" stroke="currentColor" fill="transparent" r="80" cx="96" cy="96" />
+                        <circle id="probCircle" class="text-green-500 probability-circle" stroke-width="12" stroke-dasharray="502.6" stroke-dashoffset="502.6" stroke-linecap="round" stroke="currentColor" fill="transparent" r="80" cx="96" cy="96" />
+                    </svg>
+                    <span id="probPercent" class="absolute text-4xl font-black text-green-900">--%</span>
+                </div>
+                <p id="weatherSummary" class="mt-6 text-green-800 text-sm font-medium leading-relaxed bg-white/40 p-3 rounded-xl italic">
+                    "Tap refresh to start the hunt!"
+                </p>
+            </div>
+
+            <div class="md:col-span-2 space-y-6">
+                <!-- Local Species Tracker -->
+                <div class="glass-card p-6 shadow-sm">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="font-bold text-gray-800 text-lg flex items-center gap-2">
+                            <span class="text-xl">🔭</span> Local Visitors
+                        </h3>
+                        <span class="text-[10px] bg-blue-100 text-blue-700 px-2 py-1 rounded-full font-bold">LIVE EBIRD DATA</span>
+                    </div>
+                    <div id="speciesList" class="space-y-3">
+                        <p class="text-gray-500 text-sm italic">Connect your keys to see what's nearby!</p>
+                    </div>
+                </div>
+
+                <!-- Migration Detail -->
+                <div class="glass-card p-6 shadow-sm border-l-8 border-blue-500">
+                    <h3 class="font-bold text-gray-800 mb-2">Migration Progress</h3>
+                    <div class="w-full bg-gray-200 rounded-full h-4 mb-2 overflow-hidden">
+                        <div id="migrationProgress" class="bg-blue-500 h-full transition-all duration-1000" style="width: 0%"></div>
+                    </div>
+                    <p id="migrationText" class="text-xs text-gray-600 italic">Waiting for location...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src = "hummingbird_chance.js"></script>
+</body>
+</html>
