@@ -1,39 +1,35 @@
-const CONFIG = {
-    WEATHER_KEY: "", // WeatherAPI.com Key
-    EBIRD_KEY: ""    // eBird.org API Key
-};
+async function updateAllData() {
+    document.getElementById('loading').classList.remove('hidden');
 
-function updateAllData() {
-    if (!CONFIG.WEATHER_KEY) {
-        alert("Please add your WeatherAPI key to the code!");
-        return;
-    }
-    
-document.getElementById('loading').classList.remove('hidden');
+    navigator.geolocation.getCurrentPosition(async (pos) => {
+        const { latitude: lat, longitude: lon } = pos.coords;
+        
+        try {
+            // 1. Fetch EVERYTHING from your Vercel backend in one go
+            const res = await fetch(`/api/hummers?lat=${lat}&lon=${lon}`);
+            const data = await res.json();
 
-navigator.geolocation.getCurrentPosition(async (pos) => {
-    const { latitude: lat, longitude: lon } = pos.coords;
-    await fetchWeather(lat, lon);
-    if (CONFIG.EBIRD_KEY) {
-        await fetchSpecies(lat, lon);
-    } else {
-        document.getElementById('speciesList').innerHTML = `
-            <div class="bg-orange-50 p-3 rounded-lg border border-orange-200 text-center">
-                <p class="text-orange-800 text-xs"><b>Mom:</b> To see specifically which hummingbirds are in your town, add an "eBird API Key" to the CONFIG section!</p>
-            </div>`;
-    }
-    document.getElementById('loading').classList.add('hidden');
-}, () => {
-    alert("Could not get location. Try enabling GPS!");
-    document.getElementById('loading').classList.add('hidden');
-});
+            // 2. Run the UI logic for Weather and Birds
+            if (data.weather) {
+                processWeather(data.weather);
+            }
+            if (data.birds) {
+                processSpecies(data.birds);
+            }
+
+        } catch (e) {
+            console.error("Backend error:", e);
+            alert("Could not load data from the server.");
+        }
+        
+        document.getElementById('loading').classList.add('hidden');
+    }, () => {
+        alert("Could not get location. Try enabling GPS!");
+        document.getElementById('loading').classList.add('hidden');
+    });
 }
 
-async function fetchWeather(lat, lon) {
-try {
-    const res = await fetch(`https://api.weatherapi.com/v1/current.json?key=${CONFIG.WEATHER_KEY}&q=${lat},${lon}`);
-    const data = await res.json();
-    
+function processWeather(data) {
     let score = 40;
     const temp = data.current.temp_f;
     const wind = data.current.wind_mph;
@@ -60,26 +56,19 @@ try {
     if (data.current.condition.text.toLowerCase().includes('rain')) score -= 40;
     
     updateScoreUI(Math.max(5, Math.min(99, score)), data.current.condition.text, timeNote);
-} catch (e) {
-    console.error(e);
-}
 }
 
-async function fetchSpecies(lat, lon) {
-try {
-    const res = await fetch(`https://api.ebird.org/v2/data/obs/geo/recent?lat=${lat}&lng=${lon}&dist=25`, {
-        headers: { 'X-eBirdApiToken': CONFIG.EBIRD_KEY }
-    });
-    const sightings = await res.json();
+async function processSpecies(sightings) {
     const hummers = sightings.filter(s => s.comName.toLowerCase().includes('hummingbird'));
-    
     const listEl = document.getElementById('speciesList');
+    
     if (hummers.length === 0) {
         listEl.innerHTML = `<p class="text-gray-500 text-sm">No recent reports nearby. They might be hiding!</p>`;
     } else {
         const unique = [...new Map(hummers.map(item => [item.speciesCode, item])).values()].slice(0, 5);
         listEl.innerHTML = "";
         for (const h of unique) {
+            // Wikipedia is public, so we fetch it here directly
             const wikiRes = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${h.comName.replace(/ /g, '_')}`);
             const wikiData = await wikiRes.json();
             const imgUrl = wikiData.thumbnail ? wikiData.thumbnail.source : 'https://images.unsplash.com/photo-1444464666168-49d633b867ad?auto=format&fit=crop&w=100&q=80';
@@ -98,23 +87,20 @@ try {
             `;
         }
     }
-} catch (e) {
-    console.error(e);
-}
 }
 
 function updateScoreUI(score, cond, timeNote) {
-const circle = document.getElementById('probCircle');
-const circumference = 2 * Math.PI * 80;
-circle.style.strokeDashoffset = circumference - (score / 100) * circumference;
-document.getElementById('probPercent').innerText = score + "%";
+    const circle = document.getElementById('probCircle');
+    const circumference = 2 * Math.PI * 80;
+    circle.style.strokeDashoffset = circumference - (score / 100) * circumference;
+    document.getElementById('probPercent').innerText = score + "%";
 
-document.getElementById('weatherSummary').innerHTML = `
-    <div class="mb-1">It's ${cond.toLowerCase()} right now.</div>
-    <div class="text-xs font-bold text-green-700">${timeNote}</div>
-`;
+    document.getElementById('weatherSummary').innerHTML = `
+        <div class="mb-1">It's ${cond.toLowerCase()} right now.</div>
+        <div class="text-xs font-bold text-green-700">${timeNote}</div>
+    `;
 
-const month = new Date().getMonth();
-document.getElementById('migrationProgress').style.width = (month > 2 && month < 10) ? "90%" : "20%";
-document.getElementById('migrationText').innerText = (month > 2 && month < 10) ? "Peak Season is active!" : "Off-season. Sightings are rare.";
+    const month = new Date().getMonth();
+    document.getElementById('migrationProgress').style.width = (month > 2 && month < 10) ? "90%" : "20%";
+    document.getElementById('migrationText').innerText = (month > 2 && month < 10) ? "Peak Season is active!" : "Off-season. Sightings are rare.";
 }
