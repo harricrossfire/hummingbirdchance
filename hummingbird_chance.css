@@ -1,0 +1,6 @@
+.species-img {
+    width: 64px;
+    height: 64px;
+    object-fit: cover;
+    border-radius: 50%; /* Makes them nice little circles */
+}

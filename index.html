@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>HummerWatch - Mom's Bird Tracker</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://unpkg.com/tailwindcss@^2/dist/tailwind.min.css" rel="stylesheet">
     <link rel = "stylesheet" href ="hummingbird_chance.css">
 </head>
 <body class="p-4 md:p-8 pb-20">
@@ -12,7 +12,7 @@
     <div class="max-w-md md:max-w-4xl mx-auto">
         <!-- Header -->
         <header class="flex flex-col items-center text-center md:text-left md:flex-row md:justify-between mb-8 gap-6">
-            <div class="flex flex-col md:flex-row items-center gap-4">
+            <div class="flex flex-col md:flex-row items-center text-center md:text-left gap-4 p-3 bg-white rounded-xl border border-green-100 shadow-sm transition-all hover:shadow-md">
                 <!-- Removed bg-green-600 and p-4, swapped SVG for IMG -->
                 <div class="hummingbird-float">
                     <img src="https://res.cloudinary.com/ddrwjhxu6/image/upload/v1773372300/Untitled_design_emhmtp.png" width = "30px" height="30px" alt="Hummer Logo" class="custom-logo" onerror="this.src='https://cdn-icons-png.flaticon.com/512/2613/2613860.png'">

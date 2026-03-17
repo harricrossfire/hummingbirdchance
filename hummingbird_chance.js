@@ -30,13 +30,16 @@ async function updateAllData() {
     });
 }
 
-function processWeather(data, lat) { // 1. Added lat here
+function processWeather(data, lat) {
     let score = 40;
     const temp = data.current.temp_f;
     const wind = data.current.wind_mph;
     const hour = new Date().getHours();
     
     let timeNote = "";
+    let windNote = "";
+
+    // 1. Time of Day Logic
     if (hour >= 6 && hour <= 9) {
         score += 30;
         timeNote = "It's breakfast time! Hummers are very active right now.";
@@ -51,13 +54,27 @@ function processWeather(data, lat) { // 1. Added lat here
         timeNote = "Daytime activity is steady.";
     }
 
+    // 2. Weather Condition Logic
     if (temp > 65 && temp < 85) score += 15;
-    if (wind < 10) score += 15;
+    
+    // 3. New Wind Logic
+    if (wind < 10) {
+        score += 15;
+    } else if (wind >= 15 && wind < 25) {
+        score -= 20;
+        windNote = ` <br><span class="text-orange-600 font-bold">⚠️ Windy (${wind} mph): The tiny pilots might be staying low.</span>`;
+    } else if (wind >= 25) {
+        score -= 50;
+        windNote = ` <br><span class="text-red-600 font-bold">🚫 Gale Warning (${wind} mph): Too dangerous for hummingbirds to fly!</span>`;
+    }
+
     if (data.current.condition.text.toLowerCase().includes('sun')) score += 10;
     if (data.current.condition.text.toLowerCase().includes('rain')) score -= 40;
     
-    // 2. Added lat here so it reaches the UI function
-    updateScoreUI(Math.max(5, Math.min(99, score)), data.current.condition.text, timeNote, lat);
+    // Combine notes for the UI
+    const fullNote = timeNote + windNote;
+
+    updateScoreUI(Math.max(5, Math.min(99, score)), data.current.condition.text, fullNote, lat);
 }
 async function updateByManualLocation() {
     const loc = document.getElementById('manualLocation').value;
