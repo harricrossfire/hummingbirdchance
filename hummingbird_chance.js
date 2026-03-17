@@ -1,34 +1,36 @@
 async function updateAllData() {
     document.getElementById('loading').classList.remove('hidden');
+    // Hide fallback if they are trying again
+    document.getElementById('locationFallback').classList.add('hidden');
 
-navigator.geolocation.getCurrentPosition(async (pos) => {
-    const { latitude: lat, longitude: lon } = pos.coords;
-    
-    try {
-        const res = await fetch(`/api/hummers?lat=${lat}&lon=${lon}`);
-        const data = await res.json();
+    navigator.geolocation.getCurrentPosition(async (pos) => {
+        const { latitude: lat, longitude: lon } = pos.coords;
+        
+        try {
+            const res = await fetch(`/api/hummers?lat=${lat}&lon=${lon}`);
+            const data = await res.json();
 
-        if (data.weather) processWeather(data.weather, lat); // Pass lat here too!
-        if (data.birds) processSpecies(data.birds);
+            if (data.weather) processWeather(data.weather, lat); 
+            if (data.birds) processSpecies(data.birds);
 
-    } catch (e) {
-        console.error("Backend error:", e);
-        alert("Could not load data from the server.");
-    }
-    
-    document.getElementById('loading').classList.add('hidden');
-}, () => {
-    alert("Could not get location. Try enabling GPS!");
-    document.getElementById('loading').classList.add('hidden');
-}, {
-    // THIS IS THE NEW PART
-    enableHighAccuracy: true, 
-    timeout: 10000,           
-    maximumAge: 0            
-});
+        } catch (e) {
+            console.error("Backend error:", e);
+            alert("Could not load data from the server.");
+        }
+        
+        document.getElementById('loading').classList.add('hidden');
+    }, (err) => { // This is the error callback for GPS
+        console.warn("Geolocation error:", err.message);
+        document.getElementById('loading').classList.add('hidden');
+        document.getElementById('locationFallback').classList.remove('hidden'); 
+    }, {
+        enableHighAccuracy: true, 
+        timeout: 10000,           
+        maximumAge: 0            
+    });
 }
 
-function processWeather(data) {
+function processWeather(data, lat) { // 1. Added lat here
     let score = 40;
     const temp = data.current.temp_f;
     const wind = data.current.wind_mph;
@@ -54,7 +56,8 @@ function processWeather(data) {
     if (data.current.condition.text.toLowerCase().includes('sun')) score += 10;
     if (data.current.condition.text.toLowerCase().includes('rain')) score -= 40;
     
-    updateScoreUI(Math.max(5, Math.min(99, score)), data.current.condition.text, timeNote);
+    // 2. Added lat here so it reaches the UI function
+    updateScoreUI(Math.max(5, Math.min(99, score)), data.current.condition.text, timeNote, lat);
 }
 async function updateByManualLocation() {
     const loc = document.getElementById('manualLocation').value;
@@ -99,7 +102,7 @@ async function processSpecies(sightings) {
         listEl.innerHTML = "";
         for (const h of unique) {
             // Wikipedia is public, so we fetch it here directly
-            const wikiRes = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${h.comName.replace(/ /g, '_')}`);
+            const wikiRes = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(h.comName)}`);
             const wikiData = await wikiRes.json();
             const imgUrl = wikiData.thumbnail ? wikiData.thumbnail.source : 'https://images.unsplash.com/photo-1444464666168-49d633b867ad?auto=format&fit=crop&w=100&q=80';
 
