@@ -1,32 +1,31 @@
 async function updateAllData() {
     document.getElementById('loading').classList.remove('hidden');
 
-    navigator.geolocation.getCurrentPosition(async (pos) => {
-        const { latitude: lat, longitude: lon } = pos.coords;
-        
-        try {
-            // 1. Fetch EVERYTHING from your Vercel backend in one go
-            const res = await fetch(`/api/hummers?lat=${lat}&lon=${lon}`);
-            const data = await res.json();
+navigator.geolocation.getCurrentPosition(async (pos) => {
+    const { latitude: lat, longitude: lon } = pos.coords;
+    
+    try {
+        const res = await fetch(`/api/hummers?lat=${lat}&lon=${lon}`);
+        const data = await res.json();
 
-            // 2. Run the UI logic for Weather and Birds
-            if (data.weather) {
-                processWeather(data.weather);
-            }
-            if (data.birds) {
-                processSpecies(data.birds);
-            }
+        if (data.weather) processWeather(data.weather, lat); // Pass lat here too!
+        if (data.birds) processSpecies(data.birds);
 
-        } catch (e) {
-            console.error("Backend error:", e);
-            alert("Could not load data from the server.");
-        }
-        
-        document.getElementById('loading').classList.add('hidden');
-    }, () => {
-        alert("Could not get location. Try enabling GPS!");
-        document.getElementById('loading').classList.add('hidden');
-    });
+    } catch (e) {
+        console.error("Backend error:", e);
+        alert("Could not load data from the server.");
+    }
+    
+    document.getElementById('loading').classList.add('hidden');
+}, () => {
+    alert("Could not get location. Try enabling GPS!");
+    document.getElementById('loading').classList.add('hidden');
+}, {
+    // THIS IS THE NEW PART
+    enableHighAccuracy: true, 
+    timeout: 10000,           
+    maximumAge: 0            
+});
 }
 
 function processWeather(data) {
@@ -57,7 +56,38 @@ function processWeather(data) {
     
     updateScoreUI(Math.max(5, Math.min(99, score)), data.current.condition.text, timeNote);
 }
+async function updateByManualLocation() {
+    const loc = document.getElementById('manualLocation').value;
+    if (!loc) return alert("Please enter a city or zip code!");
 
+    // UI Feedback
+    document.getElementById('loading').classList.remove('hidden');
+    document.getElementById('locationFallback').classList.add('opacity-50');
+
+    try {
+        // We pass 'q' as the query parameter
+        const res = await fetch(`/api/hummers?q=${encodeURIComponent(loc)}`);
+        const data = await res.json();
+
+        if (data.error) throw new Error(data.error);
+
+        // Get the lat from the backend's weather response to drive migration logic
+        const manualLat = data.weather.location.lat;
+
+        if (data.weather) processWeather(data.weather, manualLat);
+        if (data.birds) processSpecies(data.birds);
+
+        // Success! Hide the fallback box
+        document.getElementById('locationFallback').classList.add('hidden');
+        
+    } catch (e) {
+        console.error("Manual search error:", e);
+        alert("Couldn't find that location. Please try a different City or Zip Code.");
+    } finally {
+        document.getElementById('loading').classList.add('hidden');
+        document.getElementById('locationFallback').classList.remove('opacity-50');
+    }
+}
 async function processSpecies(sightings) {
     const hummers = sightings.filter(s => s.comName.toLowerCase().includes('hummingbird'));
     const listEl = document.getElementById('speciesList');
@@ -89,18 +119,41 @@ async function processSpecies(sightings) {
     }
 }
 
-function updateScoreUI(score, cond, timeNote) {
+function updateScoreUI(score, cond, timeNote, lat) {
+    // 1. Setup the progress circle
     const circle = document.getElementById('probCircle');
     const circumference = 2 * Math.PI * 80;
     circle.style.strokeDashoffset = circumference - (score / 100) * circumference;
     document.getElementById('probPercent').innerText = score + "%";
 
+    // 2. Update Weather Text
     document.getElementById('weatherSummary').innerHTML = `
         <div class="mb-1">It's ${cond.toLowerCase()} right now.</div>
         <div class="text-xs font-bold text-green-700">${timeNote}</div>
     `;
 
-    const month = new Date().getMonth();
-    document.getElementById('migrationProgress').style.width = (month > 2 && month < 10) ? "90%" : "20%";
-    document.getElementById('migrationText').innerText = (month > 2 && month < 10) ? "Peak Season is active!" : "Off-season. Sightings are rare.";
+    // 3. Migration Logic (Using the 'lat' we passed in)
+    const now = new Date();
+    const month = now.getMonth(); // 0 = Jan, 2 = March
+    
+    let migrationStatus = "Off-season. Sightings are rare.";
+    let progressWidth = "20%";
+
+    // Adjust arrival based on Latitude
+    // South (Lat < 35): March | Mid (Lat 35-45): April | North (Lat > 45): May
+    const arrivalMonth = (lat > 45) ? 4 : (lat > 35) ? 3 : 2; 
+
+    if (month > arrivalMonth && month < 9) {
+        migrationStatus = "Peak Season is active!";
+        progressWidth = "90%";
+    } else if (month === arrivalMonth) {
+        migrationStatus = "They are arriving now! Keep your feeders ready.";
+        progressWidth = "60%";
+    } else if (month === 9) {
+        migrationStatus = "Migration south has begun.";
+        progressWidth = "40%";
+    }
+
+    document.getElementById('migrationProgress').style.width = progressWidth;
+    document.getElementById('migrationText').innerText = migrationStatus;
 }
